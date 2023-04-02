@@ -20,36 +20,7 @@ gs4_auth(token = drive_token())
 #* @apiTitle Plumber Example API
 #* @apiDescription Plumber example description.
 
-#* Echo back the input
-#* @param msg The message to echo
-#* @get /echo
-function(msg = "") {
-    list(msg = paste0("The message is: '", msg, "'"))
-}
 
-#* Plot a histogram
-#* @serializer png
-#* @get /plot
-function() {
-    rand <- rnorm(100)
-    hist(rand)
-}
-
-#* Return the sum of two numbers
-#* @param a The first number to add
-#* @param b The second number to add
-#* @post /sum
-function(a, b) {
-    as.numeric(a) + as.numeric(b)
-}
-
-# Programmatically alter your API
-#* @plumber
-function(pr) {
-    pr %>%
-        # Overwrite the default serializer to return unboxed JSON
-        pr_set_serializer(serializer_unboxed_json())
-}
 
 
 #* @get /update
@@ -60,15 +31,40 @@ function() {
   newdata <- with(
     data,
     anthro_zscores(
-      sex = sexo_num, age = ageD,
-      weight = Weight, lenhei = Height
+      sex = sexo_num, age = edad_dias,
+      weight = `Ingrese el peso`, lenhei = `Ingrese la altura`, measure = measure, headc = `circunferencia de la cabeza`,
+      armc = `circunferencia braquial`, oedema = oedema
     )
   )
+  names(newdata)[names(newdata) %in% c("zlen", "zwei", "zwfl","zbmi","zhc","zac" )] <- c("HAZ", "WAZ", "WHZ","BAZ","HCZ","MUACZ")
   
-  data <- cbind(data[, c(1,2,3,4,5,6,7,8,9,10, 11,12,13)], newdata)
+  data <- cbind(data[, c(1,2,3,4,5,6,7,8,9,10, 11,12,13,14,15)], newdata)
   
   write_sheet(data, sheet, sheet = "datos")
   
   return("procesado exitos")
   
+}
+#* @get /csv
+#* @csv
+function(res){
+
+  data <- read.csv('https://kf.kobotoolbox.org/api/v2/assets/a3MRsgwdgcjD5c2qKzdNS4/export-settings/esSPAby29U5Tbhyr63iLZft/data.csv',  sep = ";")
+  
+  newdata <- with(
+    data,
+    anthro_zscores(
+      sex = sexo_num, age = edad_dias,
+      weight = Ingrese.el.peso, lenhei = Ingrese.la.altura, measure = measure, headc = circunferencia.de.la.cabeza,
+      armc = circunferencia.braquial, oedema = oedema
+    )
+  )
+  names(newdata)[names(newdata) %in% c("zlen", "zwei", "zwfl","zbmi","zhc","zac" )] <- c("HAZ", "WAZ", "WHZ","BAZ","HCZ","MUACZ")
+  
+  data <- cbind(data[, c(1,2,3,4,5,6,7,8,9,10, 11,12,13,14,15)], newdata)
+  
+  
+  filename <- tempfile(fileext = ".csv")
+  write.csv(data, filename, row.names = FALSE)
+  include_file(filename, res, "text/csv")
 }
